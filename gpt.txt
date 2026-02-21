@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HBD Love</title>
+<style>
+body { margin:0; padding:0; background:#fff0f5; font-family:sans-serif; text-align:center; }
+#wrap { position:relative; width:1100px; margin: auto; }
+#canvas { display:block; margin:0 auto; }
+#clock-box { margin-top:20px; font-size:22px; color:#c00; }
+#code { display:none; font-size:28px; color:#900; line-height:1.5; }
+.say { display:block; margin:5px 0; opacity:0; transition: opacity 0.6s; }
+#canvas.hand { cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="wrap">
+    <div id="text">
+        <div id="code">
+            <span class="say">My beautiful wife 💞</span>
+            <span class="say">Happy Birthday 🎈</span>
+            <span class="say">May Allah bless you 🍀</span>
+            <span class="say">And give you many happiness 💕</span>
+            <span class="say">I love you ❤️</span>
+            <span class="say">And I will always love you 🥺 ❤️</span>
+            <span class="say">Hope you have a great day today ❤️😘</span>
+        </div>
+    </div>
+    <div id="clock-box"><span id="ageTimer">Calculating age...</span></div>
+    <canvas id="canvas" width="1100" height="680"></canvas>
+</div>
+
+<audio id="myAudio" src="aud.mp3"></audio>
+
+<script>
+// ---- Heart / Tree bloom animation simplified ----
+class Petal {
+    constructor(x, y, color) {
+        this.x = x; this.y = y; this.color = color;
+        this.r = Math.random()*4+2;
+        this.speed = Math.random()*1+0.5;
+    }
+    draw(ctx) {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+        ctx.fill();
+    }
+    update() { this.y -= this.speed; }
+}
+
+class Tree {
+    constructor(canvas){
+        this.canvas = canvas;
+        this.ctx = canvas.getContext("2d");
+        this.petalColors = ["#FF3366","#FF6699","#FF99CC","#FFB6C1"];
+        this.petals = [];
+        this.seedX = canvas.width/2;
+        this.seedY = canvas.height-50;
+        this.seedR = 15;
+        this.grown = false;
+    }
+    drawSeed(){
+        let c=this.ctx;
+        c.fillStyle="rgb(190,26,37)";
+        c.beginPath();
+        c.arc(this.seedX,this.seedY,this.seedR,0,Math.PI*2);
+        c.fill();
+    }
+    bloom(){
+        for(let i=0;i<5;i++){
+            let x=this.seedX+(Math.random()*60-30);
+            let y=this.seedY-(Math.random()*200+50);
+            let color=this.petalColors[Math.floor(Math.random()*this.petalColors.length)];
+            this.petals.push(new Petal(x,y,color));
+        }
+    }
+    update(){
+        let c=this.ctx;
+        c.clearRect(0,0,this.canvas.width,this.canvas.height);
+        // draw seed
+        if(!this.grown){
+            this.drawSeed();
+        }
+        // draw petals
+        for(let p of this.petals){
+            p.update();
+            p.draw(c);
+        }
+    }
+}
+
+const canvas=document.getElementById("canvas");
+const tree=new Tree(canvas);
+let animationRunning=false;
+
+canvas.addEventListener("click",()=>{
+    if(animationRunning) return;
+    animationRunning=true;
+    document.getElementById("myAudio").play().catch(()=>{});
+    // animate seed shrinking
+    let seedShrink = setInterval(()=>{
+        tree.seedR *=0.95;
+        tree.update();
+        if(tree.seedR<1){
+            clearInterval(seedShrink);
+            // bloom petals
+            let bloomCount=0;
+            let bloomInterval=setInterval(()=>{
+                tree.bloom();
+                tree.update();
+                bloomCount++;
+                if(bloomCount>80){
+                    clearInterval(bloomInterval);
+                    // show text typewriter effect
+                    const spans=document.querySelectorAll(".say");
+                    spans.forEach((s,i)=>{
+                        setTimeout(()=>{s.style.opacity=1;}, i*600);
+                    });
+                }
+            },50);
+        }
+    },50);
+});
+
+canvas.addEventListener("mousemove",e=>{
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    const my=e.clientY-rect.top;
+    const dx=mx-tree.seedX;
+    const dy=my-tree.seedY;
+    if(Math.sqrt(dx*dx+dy*dy)<tree.seedR) canvas.classList.add("hand");
+    else canvas.classList.remove("hand");
+});
+
+// ---- Age Counter ----
+function updateAge(){
+    const birthDate=new Date("2009-02-22T00:00:00");
+    const now=new Date();
+    let diff=Math.floor((now-birthDate)/1000);
+    let years=Math.floor(diff/(365.25*24*3600));
+    diff-=years*365.25*24*3600;
+    let months=Math.floor(diff/(30.44*24*3600));
+    diff-=months*30.44*24*3600;
+    let days=Math.floor(diff/(24*3600));
+    diff-=days*24*3600;
+    let hours=Math.floor(diff/3600);
+    diff-=hours*3600;
+    let minutes=Math.floor(diff/60);
+    let seconds=diff%60;
+    document.getElementById("ageTimer").innerHTML=
+        years+" years "+months+" months "+days+" days "+
+        hours+" hours "+minutes+" minutes "+seconds+" seconds 💖";
+}
+setInterval(updateAge,1000);
+updateAge();
+</script>
+</body>
+</html>
